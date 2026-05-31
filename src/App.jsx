@@ -12,9 +12,11 @@ const nav = [
 const icons = [Home, Building2, Factory, Battery, Sun, Wrench];
 
 function Header({ page, setPage }) {
+  
+
   const [open, setOpen] = useState(false);
   return (
-    
+
     <header className="fixed top-0 inset-x-0 z-50 bg-ecoDark/85 backdrop-blur border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
         <button onClick={() => setPage("home")} className="text-left">
