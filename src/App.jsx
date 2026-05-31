@@ -143,7 +143,18 @@ function Hero() {
         </div>
 
         <div className="glass rounded-[2rem] p-5">
-          <img src="/images/solar-panel.svg" className="rounded-3xl w-full h-72 object-cover" alt="Solar panel" />
+          {/* Hero video — place your file at public/images/hero-video.mp4 */}
+          <video
+            src="/images/hero-video.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="rounded-3xl w-full h-72 object-cover"
+          >
+            {/* Fallback image shown if video can't load */}
+            <img src="/images/solar-panel.svg" className="rounded-3xl w-full h-72 object-cover" alt="Solar panel" />
+          </video>
           <div className="grid grid-cols-2 gap-4 mt-5">
             {[["10+ MW", "Installed Capacity"], ["500+", "Installations"], ["33 kV", "Grid Expertise"], ["24/7", "Support"]].map(([a, b]) => (
               <div key={b} className="rounded-2xl bg-black/30 border border-white/10 p-5">
@@ -155,6 +166,29 @@ function Hero() {
         </div>
       </div>
     </section>
+  );
+}
+
+// ─── Image Banner ───────────────────────────────────────────────────────────
+function ImageBanner() {
+  return (
+    <div className="relative w-full h-64 md:h-96 overflow-hidden">
+      {/* Place your photo at public/images/hero-photo.jpg */}
+      <img
+        src="/images/hero-photo.jpg"
+        alt="Ceylon Eco Power solar installation"
+        className="w-full h-full object-cover"
+        onError={(e) => { e.currentTarget.style.display = "none"; }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-ecoDark/70 via-ecoDark/30 to-transparent flex items-center px-8 md:px-16">
+        <div>
+          <p className="text-ecoGold text-xs font-black tracking-[0.3em] uppercase mb-2">Our Work</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+            Powering Sri Lanka<br />with Clean Energy
+          </h2>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -445,6 +479,7 @@ export default function App() {
       <Header active={active} />
       <main>
         <Hero />
+        <ImageBanner />
         <About />
         <Services />
         <Projects />
