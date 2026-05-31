@@ -143,17 +143,15 @@ function Hero() {
         </div>
 
         <div className="glass rounded-[2rem] p-5">
-          {/* Hero video — place your file at public/images/hero-video.mp4 */}
           <video
-            src="/images/hero-video.mp4"
             autoPlay
             muted
             loop
             playsInline
+            poster="/images/hero-photo.JPG"
             className="rounded-3xl w-full h-72 object-cover"
           >
-            {/* Fallback image shown if video can't load */}
-            <img src="/images/solar-panel.svg" className="rounded-3xl w-full h-72 object-cover" alt="Solar panel" />
+            <source src="/images/hero-video.mp4" type="video/mp4" />
           </video>
           <div className="grid grid-cols-2 gap-4 mt-5">
             {[["10+ MW", "Installed Capacity"], ["500+", "Installations"], ["33 kV", "Grid Expertise"], ["24/7", "Support"]].map(([a, b]) => (
@@ -175,10 +173,9 @@ function ImageBanner() {
     <div className="relative w-full h-64 md:h-96 overflow-hidden">
       {/* Place your photo at public/images/hero-photo.jpg */}
       <img
-        src="/images/hero-photo.jpg"
+        src="/images/hero-photo.JPG"
         alt="Ceylon Eco Power solar installation"
         className="w-full h-full object-cover"
-        onError={(e) => { e.currentTarget.style.display = "none"; }}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-ecoDark/70 via-ecoDark/30 to-transparent flex items-center px-8 md:px-16">
         <div>
