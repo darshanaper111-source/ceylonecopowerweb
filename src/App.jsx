@@ -20,7 +20,7 @@ function Header({ page, setPage }) {
     <header className="fixed top-0 inset-x-0 z-50 bg-ecoDark/85 backdrop-blur border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
         <button onClick={() => setPage("home")} className="text-left">
-          <div className="text-xl font-black">CEYLON <span className="text-ecoGold">ECO POWER</span></div>
+          <div className="text-xl font-black">CEYLONBBB <span className="text-ecoGold">ECO POWER</span></div>
           <div className="text-[10px] tracking-[0.3em] text-white/50">SOLAR ENGINEERING</div>
         </button>
         <nav className="hidden md:flex gap-7">
