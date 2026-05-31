@@ -34,7 +34,7 @@ function Header({ active }) {
         {/* Logo */}
         <button onClick={() => nav("home")} className="text-left">
           <div className="text-xl font-black tracking-wide">
-            CEYLON <span className="text-ecoGold">ECO POWER</span>
+            CEYLONTTT <span className="text-ecoGold">ECO POWER</span>
           </div>
           <div className="text-[10px] tracking-[0.3em] text-white/50 uppercase">Solar Engineering</div>
         </button>
