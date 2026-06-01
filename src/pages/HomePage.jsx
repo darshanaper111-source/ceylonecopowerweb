@@ -18,7 +18,7 @@ function Hero() {
       <div className="max-w-7xl mx-auto px-4 min-h-[calc(100vh-5rem)] grid md:grid-cols-2 gap-12 items-center py-20">
         <div>
           <div className="inline-flex rounded-full border border-ecoGold/30 bg-ecoGold/10 px-4 py-2 text-xs font-bold tracking-[0.25em] text-ecoGold uppercase">
-            Renewable Energy · Sri Lanka
+            Renewable Energy · Sri Lankaaaa
           </div>
           <h1 className="mt-6 text-5xl md:text-6xl xl:text-7xl font-black leading-tight">
             Clean Solar Power<br />
