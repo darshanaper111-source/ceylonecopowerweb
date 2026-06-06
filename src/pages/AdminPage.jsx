@@ -10,6 +10,7 @@ import {
 import { projectCategories } from "../data/projects.js";
 import { partnerSections }    from "../data/partners.js";
 
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const BLANK_PROJECT = {
   categoryId: "utility",
