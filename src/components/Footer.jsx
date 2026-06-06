@@ -6,6 +6,7 @@ const NAV = [
   ["/projects", "Our Projects"],
   ["/partners", "Our Partners"],
   ["/contact",  "Contact Us"],
+  
 ];
 
 export default function Footer() {
