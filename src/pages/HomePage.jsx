@@ -67,6 +67,7 @@ function ImageBanner() {
       </div>
     </div>
   );
+  
 }
 
 function About() {
