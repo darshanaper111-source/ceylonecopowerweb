@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Battery, BatteryCharging, Cable, LayoutGrid, Sun, Zap } from "lucide-react";
+import { Battery, BatteryCharging, Cable, ChevronLeft, ChevronRight, LayoutGrid, Sun, Zap } from "lucide-react";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { partnerSections as defaultSections } from "../data/partners.js";
 import { getStoredBrands } from "../data/storage.js";
 
 const ICON_MAP = { Sun, Zap, BatteryCharging, Battery, LayoutGrid, Cable };
 
-// Merge default + admin-added brands
+// Merge default brands + admin-added brands per section
 function useSections() {
   const stored = getStoredBrands();
   return defaultSections.map((sec) => ({
@@ -20,6 +20,7 @@ function useSections() {
           name: b.name,
           logo: b.logo || "",
           models: Array.isArray(b.models) ? b.models : [],
+          photos: Array.isArray(b.photos) ? b.photos.filter(Boolean) : [],
         })),
     ],
   }));
@@ -32,31 +33,89 @@ function BrandLogo({ src, name }) {
     const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 3).toUpperCase();
     return (
       <div className="h-16 w-full flex items-center justify-center bg-ecoGold/10 rounded-xl">
-        <span className="text-ecoGold font-black text-lg tracking-widest">{initials}</span>
+        <span className="text-ecoGold font-black text-xl tracking-widest">{initials}</span>
       </div>
     );
   }
+  return <img src={src} alt={name} className="h-16 w-full object-contain" onError={() => setErr(true)} />;
+}
+
+// ─── Brand Photo Gallery ──────────────────────────────────────────────────────
+function BrandGallery({ photos }) {
+  const [idx, setIdx] = useState(0);
+  if (!photos || photos.length === 0) return null;
+
   return (
-    <img src={src} alt={name} className="h-16 w-full object-contain" onError={() => setErr(true)} />
+    <div className="relative rounded-xl overflow-hidden h-44 group mt-2">
+      <img
+        src={photos[idx]}
+        alt=""
+        className="w-full h-full object-cover"
+        onError={(e) => { e.currentTarget.style.display = "none"; }}
+      />
+      {photos.length > 1 && (
+        <>
+          <button
+            onClick={() => setIdx((idx - 1 + photos.length) % photos.length)}
+            className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            onClick={() => setIdx((idx + 1) % photos.length)}
+            className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+          >
+            <ChevronRight size={14} />
+          </button>
+          <div className="absolute bottom-1.5 left-0 right-0 flex justify-center gap-1">
+            {photos.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                className={`w-1.5 h-1.5 rounded-full transition ${i === idx ? "bg-ecoGold" : "bg-white/50"}`}
+              />
+            ))}
+          </div>
+          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {idx + 1}/{photos.length}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
 // ─── Brand Card ───────────────────────────────────────────────────────────────
 function BrandCard({ brand }) {
+  const hasPhotos = brand.photos && brand.photos.length > 0;
   return (
-    <div className="bg-ecoCream rounded-3xl border border-black/10 p-6 shadow-md hover:shadow-xl transition flex flex-col gap-4">
-      <div className="bg-white rounded-2xl p-4 flex items-center justify-center h-24">
+    <div className="bg-ecoCream rounded-3xl border border-black/10 shadow-md hover:shadow-xl transition flex flex-col overflow-hidden">
+      {/* Logo area */}
+      <div className="bg-white p-5 flex items-center justify-center h-24 border-b border-black/5">
         <BrandLogo src={brand.logo} name={brand.name} />
       </div>
-      <h3 className="font-black text-ecoDark text-base">{brand.name}</h3>
-      <ul className="space-y-1">
-        {brand.models.map((m) => (
-          <li key={m} className="flex items-start gap-2 text-sm text-black/60">
-            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-ecoGold shrink-0" />
-            {m}
-          </li>
-        ))}
-      </ul>
+
+      {/* Photo gallery (only if photos uploaded) */}
+      {hasPhotos && (
+        <div className="px-4 pt-3">
+          <BrandGallery photos={brand.photos} />
+        </div>
+      )}
+
+      {/* Name + models */}
+      <div className="p-5 flex flex-col gap-3 flex-1">
+        <h3 className="font-black text-ecoDark text-base">{brand.name}</h3>
+        {brand.models.length > 0 && (
+          <ul className="space-y-1">
+            {brand.models.map((m) => (
+              <li key={m} className="flex items-start gap-2 text-sm text-black/60">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-ecoGold shrink-0" />
+                {m}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
