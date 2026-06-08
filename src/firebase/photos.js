@@ -1,0 +1,67 @@
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage, isConfigured } from "./config.js";
+
+// Compress a File to a Blob (JPEG)
+function compressToBlob(file, maxPx = 1200, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ({ target: { result } }) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Compression failed"))),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Upload a single photo → return download URL
+export async function uploadPhoto(storagePath, file) {
+  if (!isConfigured) throw new Error("Firebase not configured");
+  const blob     = await compressToBlob(file);
+  const photoRef = ref(storage, storagePath);
+  await uploadBytes(photoRef, blob, { contentType: "image/jpeg" });
+  return await getDownloadURL(photoRef);
+}
+
+/**
+ * Upload an array of mixed items:
+ *   File   → compress + upload → return URL
+ *   string → return as-is (already a URL or path)
+ *   null/""→ skip
+ * basePath example: "projects/abc123" → files saved as "projects/abc123/photo1.jpg" etc.
+ */
+export async function uploadPhotos(basePath, photos, onProgress) {
+  const urls = [];
+  for (let i = 0; i < photos.length; i++) {
+    const item = photos[i];
+    if (!item) continue;
+    if (typeof item === "string") { urls.push(item); continue; }
+    if (item instanceof File) {
+      const url = await uploadPhoto(`${basePath}/photo${i + 1}.jpg`, item);
+      urls.push(url);
+    }
+    onProgress?.(i + 1, photos.filter(Boolean).length);
+  }
+  return urls;
+}
+
+// Create an object-URL preview for a File (revoke when done)
+export function previewUrl(item) {
+  if (!item) return "";
+  if (typeof item === "string") return item;
+  if (item instanceof File) return URL.createObjectURL(item);
+  return "";
+}

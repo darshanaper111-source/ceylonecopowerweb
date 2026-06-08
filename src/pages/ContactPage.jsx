@@ -10,7 +10,7 @@ export default function ContactPage() {
         <div className="grid md:grid-cols-2 gap-8">
           <div className="glass rounded-[2rem] p-8 flex flex-col gap-6">
             <h3 className="text-2xl font-black">Get in Touch</h3>
-            {[["Phone","+94 70 000 0000",Phone],["Email","info@ceylonecopower.com",Mail],["Office","Sri Lanka",MapPin]].map(([label,value,Icon]) => (
+            {[["Phone","+94 71688058",Phone],["Email","info@ceylonecopower.com",Mail],["Office","Sri Lanka",MapPin]].map(([label,value,Icon]) => (
               <div key={label} className="flex items-start gap-4">
                 <div className="h-12 w-12 shrink-0 rounded-full bg-ecoGold text-black flex items-center justify-center"><Icon size={20} /></div>
                 <div><p className="font-bold">{label}</p><p className="text-white/60 text-sm mt-0.5">{value}</p></div>

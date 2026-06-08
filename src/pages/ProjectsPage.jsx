@@ -1,28 +1,45 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, MapPin, Zap } from "lucide-react";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { projectCategories as defaultCategories } from "../data/projects.js";
 import { getStoredProjects } from "../data/storage.js";
+import { fbProjects } from "../firebase/db.js";
+import { isConfigured } from "../firebase/config.js";
 
-// Merge default + admin-added projects
+function toProjectShape(p, fallbackId) {
+  return {
+    id:         p._fbId || p._id || fallbackId,
+    title:      p.title,
+    location:   p.location,
+    acCapacity: p.acCapacity || "—",
+    dcCapacity: p.dcCapacity || "—",
+    client:     p.client || "—",
+    details:    p.details || "",
+    photos:     Array.isArray(p.photos) ? p.photos.filter(Boolean) : [],
+  };
+}
+
+// Merge default + localStorage + Firestore projects
 function useCategories() {
+  const [fbList, setFbList] = useState([]);
+
+  useEffect(() => {
+    if (!isConfigured) return;
+    fbProjects.getAll().then(setFbList).catch(() => {});
+  }, []);
+
   const stored = getStoredProjects();
+
   return defaultCategories.map((cat) => ({
     ...cat,
     projects: [
       ...cat.projects,
       ...stored
         .filter((p) => p.categoryId === cat.id)
-        .map((p) => ({
-          id: p._id,
-          title: p.title,
-          location: p.location,
-          acCapacity: p.acCapacity || "—",
-          dcCapacity: p.dcCapacity || "—",
-          client: p.client || "—",
-          details: p.details || "",
-          photos: Array.isArray(p.photos) ? p.photos.filter(Boolean) : [],
-        })),
+        .map((p) => toProjectShape(p, p._id)),
+      ...fbList
+        .filter((p) => p.categoryId === cat.id)
+        .map((p) => toProjectShape(p, p._fbId)),
     ],
   }));
 }

@@ -1,27 +1,44 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Battery, BatteryCharging, Cable, ChevronLeft, ChevronRight, LayoutGrid, Sun, Zap } from "lucide-react";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { partnerSections as defaultSections } from "../data/partners.js";
 import { getStoredBrands } from "../data/storage.js";
+import { fbBrands } from "../firebase/db.js";
+import { isConfigured } from "../firebase/config.js";
 
 const ICON_MAP = { Sun, Zap, BatteryCharging, Battery, LayoutGrid, Cable };
 
-// Merge default brands + admin-added brands per section
+function toBrandShape(b, fallbackId) {
+  return {
+    id:     b._fbId || b._id || fallbackId,
+    name:   b.name,
+    logo:   b.logo || "",
+    models: Array.isArray(b.models) ? b.models : [],
+    photos: Array.isArray(b.photos) ? b.photos.filter(Boolean) : [],
+  };
+}
+
+// Merge default brands + localStorage + Firestore brands per section
 function useSections() {
+  const [fbList, setFbList] = useState([]);
+
+  useEffect(() => {
+    if (!isConfigured) return;
+    fbBrands.getAll().then(setFbList).catch(() => {});
+  }, []);
+
   const stored = getStoredBrands();
+
   return defaultSections.map((sec) => ({
     ...sec,
     brands: [
       ...sec.brands,
       ...stored
         .filter((b) => b.sectionId === sec.id)
-        .map((b) => ({
-          id: b._id,
-          name: b.name,
-          logo: b.logo || "",
-          models: Array.isArray(b.models) ? b.models : [],
-          photos: Array.isArray(b.photos) ? b.photos.filter(Boolean) : [],
-        })),
+        .map((b) => toBrandShape(b, b._id)),
+      ...fbList
+        .filter((b) => b.sectionId === sec.id)
+        .map((b) => toBrandShape(b, b._fbId)),
     ],
   }));
 }

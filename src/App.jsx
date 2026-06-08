@@ -7,6 +7,7 @@ import HomePage     from "./pages/HomePage.jsx";
 import ProjectsPage from "./pages/ProjectsPage.jsx";
 import PartnersPage from "./pages/PartnersPage.jsx";
 import ContactPage  from "./pages/ContactPage.jsx";
+import ShopPage     from "./pages/ShopPage.jsx";
 import AdminPage    from "./pages/AdminPage.jsx";
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
                   <Route path="/projects" element={<ProjectsPage />} />
                   <Route path="/partners" element={<PartnersPage />} />
                   <Route path="/contact"  element={<ContactPage />} />
+                  <Route path="/shop"     element={<ShopPage />} />
                   <Route path="*"         element={<HomePage />} />
                 </Routes>
               </main>
