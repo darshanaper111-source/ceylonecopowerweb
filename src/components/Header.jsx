@@ -7,6 +7,7 @@ const NAV = [
   ["/projects", "Our Projects"],
   ["/partners", "Our Partners"],
   ["/shop",     "Shop"],
+  ["/quote",    "Get Quote"],
   ["/contact",  "Contact Us"],
 ];
 
@@ -39,7 +40,7 @@ export default function Header() {
         </nav>
 
         <Link
-          to="/contact"
+          to="/quote"
           className="hidden md:block bg-ecoGold text-black rounded-full px-6 py-2.5 text-sm font-bold hover:bg-yellow-400 transition"
         >
           Get Free Quote

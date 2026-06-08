@@ -37,25 +37,22 @@ export async function uploadPhoto(storagePath, file) {
 }
 
 /**
- * Upload an array of mixed items:
- *   File   → compress + upload → return URL
- *   string → return as-is (already a URL or path)
- *   null/""→ skip
- * basePath example: "projects/abc123" → files saved as "projects/abc123/photo1.jpg" etc.
+ * Upload all photos in parallel.
+ * File   → compress + upload → URL
+ * string → returned as-is
+ * null/"" → skipped
  */
-export async function uploadPhotos(basePath, photos, onProgress) {
-  const urls = [];
-  for (let i = 0; i < photos.length; i++) {
-    const item = photos[i];
-    if (!item) continue;
-    if (typeof item === "string") { urls.push(item); continue; }
-    if (item instanceof File) {
-      const url = await uploadPhoto(`${basePath}/photo${i + 1}.jpg`, item);
-      urls.push(url);
-    }
-    onProgress?.(i + 1, photos.filter(Boolean).length);
-  }
-  return urls;
+export async function uploadPhotos(basePath, photos) {
+  const results = await Promise.all(
+    photos.map((item, i) => {
+      if (!item) return Promise.resolve(null);
+      if (typeof item === "string") return Promise.resolve(item || null);
+      if (item instanceof File)
+        return uploadPhoto(`${basePath}/photo${i + 1}.jpg`, item).catch(() => null);
+      return Promise.resolve(null);
+    })
+  );
+  return results.filter(Boolean);
 }
 
 // Create an object-URL preview for a File (revoke when done)

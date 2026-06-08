@@ -6,6 +6,7 @@ const NAV = [
   ["/projects", "Our Projects"],
   ["/partners", "Our Partners"],
   ["/shop",     "Shop"],
+  ["/quote",    "Get Quote"],
   ["/contact",  "Contact Us"],
 ];
 

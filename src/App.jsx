@@ -8,6 +8,7 @@ import ProjectsPage from "./pages/ProjectsPage.jsx";
 import PartnersPage from "./pages/PartnersPage.jsx";
 import ContactPage  from "./pages/ContactPage.jsx";
 import ShopPage     from "./pages/ShopPage.jsx";
+import QuotePage    from "./pages/QuotePage.jsx";
 import AdminPage    from "./pages/AdminPage.jsx";
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
                   <Route path="/partners" element={<PartnersPage />} />
                   <Route path="/contact"  element={<ContactPage />} />
                   <Route path="/shop"     element={<ShopPage />} />
+                  <Route path="/quote"    element={<QuotePage />} />
                   <Route path="*"         element={<HomePage />} />
                 </Routes>
               </main>

@@ -1,6 +1,6 @@
 import {
   collection, addDoc, getDocs, deleteDoc, doc,
-  query, orderBy, serverTimestamp, updateDoc,
+  serverTimestamp, updateDoc,
 } from "firebase/firestore";
 import { db, isConfigured } from "./config.js";
 
@@ -8,10 +8,10 @@ function col(name) { return collection(db, name); }
 
 async function getAll(name) {
   if (!isConfigured) return [];
-  try {
-    const snap = await getDocs(query(col(name), orderBy("createdAt", "desc")));
-    return snap.docs.map((d) => ({ _fbId: d.id, ...d.data() }));
-  } catch { return []; }
+  // No orderBy — avoids needing Firestore indexes; sort client-side instead.
+  const snap = await getDocs(col(name));
+  const docs = snap.docs.map((d) => ({ _fbId: d.id, ...d.data() }));
+  return docs.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
 
 async function add(name, data) {

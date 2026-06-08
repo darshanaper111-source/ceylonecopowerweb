@@ -396,15 +396,25 @@ function ManageData() {
   const [fbProjList, setFbProjList] = useState([]);
   const [fbBrandList, setFbBrandList] = useState([]);
   const [fbProdList, setFbProdList] = useState([]);
+  const [fbError, setFbError] = useState("");
   const [msg, setMsg] = useState("");
   const fileRef = useRef();
 
-  useEffect(() => {
+  function loadFirebase() {
     if (!isConfigured) return;
-    fbProjects.getAll().then(setFbProjList).catch(() => {});
-    fbBrands.getAll().then(setFbBrandList).catch(() => {});
-    fbProducts.getAll().then(setFbProdList).catch(() => {});
-  }, []);
+    setFbError("");
+    Promise.all([
+      fbProjects.getAll(),
+      fbBrands.getAll(),
+      fbProducts.getAll(),
+    ]).then(([p, b, pr]) => {
+      setFbProjList(p);
+      setFbBrandList(b);
+      setFbProdList(pr);
+    }).catch((e) => setFbError(e.message || String(e)));
+  }
+
+  useEffect(() => { loadFirebase(); }, []);
 
   const lsProjects = getStoredProjects();
   const lsBrands   = getStoredBrands();
@@ -426,6 +436,23 @@ function ManageData() {
 
   return (
     <div className="space-y-8">
+      {/* Firebase read error */}
+      {fbError && (
+        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">
+          <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <strong>Firebase read failed:</strong> {fbError}
+            <div className="mt-2 text-red-700 text-xs leading-relaxed">
+              Most likely cause: <strong>Firestore security rules</strong> are blocking reads.<br />
+              Go to <strong>Firebase Console → Firestore → Rules</strong> and set:<br />
+              <code className="block mt-1 bg-red-100 px-2 py-1 rounded font-mono">allow read, write: if true;</code>
+              Also check <strong>Storage → Rules</strong> for the same fix.
+            </div>
+          </div>
+          <button onClick={loadFirebase} className="text-xs font-bold text-red-600 hover:text-red-800 border border-red-300 rounded-lg px-3 py-1.5 shrink-0">Retry</button>
+        </div>
+      )}
+
       {/* LocalStorage notice */}
       <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
         <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
