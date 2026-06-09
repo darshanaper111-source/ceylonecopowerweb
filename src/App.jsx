@@ -7,9 +7,10 @@ import HomePage     from "./pages/HomePage.jsx";
 import ProjectsPage from "./pages/ProjectsPage.jsx";
 import PartnersPage from "./pages/PartnersPage.jsx";
 import ContactPage  from "./pages/ContactPage.jsx";
-import ShopPage     from "./pages/ShopPage.jsx";
-import QuotePage    from "./pages/QuotePage.jsx";
-import AdminPage    from "./pages/AdminPage.jsx";
+import ShopPage        from "./pages/ShopPage.jsx";
+import QuotePage       from "./pages/QuotePage.jsx";
+import MonitoringPage  from "./pages/MonitoringPage.jsx";
+import AdminPage       from "./pages/AdminPage.jsx";
 
 export default function App() {
   return (
@@ -31,8 +32,9 @@ export default function App() {
                   <Route path="/partners" element={<PartnersPage />} />
                   <Route path="/contact"  element={<ContactPage />} />
                   <Route path="/shop"     element={<ShopPage />} />
-                  <Route path="/quote"    element={<QuotePage />} />
-                  <Route path="*"         element={<HomePage />} />
+                  <Route path="/quote"      element={<QuotePage />} />
+                  <Route path="/monitoring" element={<MonitoringPage />} />
+                  <Route path="*"           element={<HomePage />} />
                 </Routes>
               </main>
               <Footer />

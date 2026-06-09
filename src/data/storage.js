@@ -1,6 +1,9 @@
 const PROJECTS_KEY = "cep_projects_v1";
 const BRANDS_KEY   = "cep_brands_v1";
+const MONITOR_KEY  = "cep_monitor_v1";
 const AUTH_KEY     = "cep_auth";
+
+export const INSTALLER_PASSWORD = "cep-monitor-2024";
 export const ADMIN_PASSWORD = "cep2024"; // change this
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -37,6 +40,19 @@ export function addBrand(b) {
 }
 export function deleteBrand(id) {
   localStorage.setItem(BRANDS_KEY, JSON.stringify(getStoredBrands().filter(b => b._id !== id)));
+}
+
+// ─── Monitoring Sites ─────────────────────────────────────────────────────────
+export function getStoredMonitorSites() {
+  try { return JSON.parse(localStorage.getItem(MONITOR_KEY) || "[]"); } catch { return []; }
+}
+export function addMonitorSite(s) {
+  const list = getStoredMonitorSites();
+  list.push({ ...s, _id: String(Date.now()) });
+  localStorage.setItem(MONITOR_KEY, JSON.stringify(list));
+}
+export function deleteMonitorSite(id) {
+  localStorage.setItem(MONITOR_KEY, JSON.stringify(getStoredMonitorSites().filter(s => s._id !== id)));
 }
 
 // ─── Export / Import ──────────────────────────────────────────────────────────

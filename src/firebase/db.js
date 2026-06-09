@@ -52,3 +52,11 @@ export const fbProducts = {
   update: (id, d) => update("products", id, d),
   remove: (id) => remove("products", id),
 };
+
+// ─── Monitoring Sites ─────────────────────────────────────────────────────────
+export const fbMonitorSites = {
+  getAll: () => getAll("monitoringSites"),
+  add:    (d) => add("monitoringSites", d),
+  update: (id, d) => update("monitoringSites", id, d),
+  remove: (id) => remove("monitoringSites", id),
+};

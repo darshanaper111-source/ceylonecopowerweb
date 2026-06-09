@@ -13,6 +13,9 @@ import {
 } from "../data/storage.js";
 import { projectCategories } from "../data/projects.js";
 import { partnerSections }    from "../data/partners.js";
+import AccessoriesTab          from "../admin/AccessoriesTab.jsx";
+import BudgetCalcTab           from "../admin/BudgetCalcTab.jsx";
+import MonitoringSitesTab      from "../admin/MonitoringSitesTab.jsx";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function cls(...p) { return p.filter(Boolean).join(" "); }
@@ -112,8 +115,8 @@ function FBBanner() {
     <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-6">
       <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
       <div>
-        <strong>Firebase not connected.</strong> Falling back to browser localStorage.<br />
-        Create a <code className="bg-amber-100 px-1 rounded">.env</code> file from <code className="bg-amber-100 px-1 rounded">.env.example</code> and add your Firebase project credentials to enable cloud storage.
+        <strong>Firebase not connected.</strong> Falling back to browser localStorage (data lost on browser clear).<br />
+        Add your credentials to a <code className="bg-amber-100 px-1 rounded">.env</code> file, then <strong>restart the dev server</strong>.
       </div>
     </div>
   );
@@ -558,10 +561,13 @@ function ManageData() {
 
 // ─── AdminPage ────────────────────────────────────────────────────────────────
 const TABS = [
-  ["project", "Add Project"],
-  ["brand",   "Add Partner"],
-  ["product", "Add Shop Product"],
-  ["manage",  "Manage & Backup"],
+  ["project",    "Add Project"],
+  ["brand",      "Add Partner"],
+  ["product",    "Add Shop Product"],
+  ["manage",     "Manage & Backup"],
+  ["accessories","Accessories & Prices"],
+  ["budget",     "Budget Calculator"],
+  ["monitoring", "Monitoring Sites"],
 ];
 
 export default function AdminPage() {
@@ -584,7 +590,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="max-w-6xl mx-auto px-4 py-10">
         <FBBanner />
 
         {/* Tabs */}
@@ -596,11 +602,14 @@ export default function AdminPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl border shadow-sm p-8">
-          {tab === "project" && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Completed Project</h2><ProjectForm onSaved={() => setTick((t)=>t+1)} /></>}
-          {tab === "brand"   && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Partner / Brand</h2><BrandForm   onSaved={() => setTick((t)=>t+1)} /></>}
-          {tab === "product" && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Shop Product</h2><ProductForm  onSaved={() => setTick((t)=>t+1)} /></>}
-          {tab === "manage"  && <><h2 className="text-xl font-black text-gray-700 mb-6">Manage & Backup</h2><ManageData /></>}
+        <div className={tab === "budget" ? "" : "bg-white rounded-2xl border shadow-sm p-8"}>
+          {tab === "project"     && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Completed Project</h2><ProjectForm onSaved={() => setTick((t)=>t+1)} /></>}
+          {tab === "brand"       && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Partner / Brand</h2><BrandForm   onSaved={() => setTick((t)=>t+1)} /></>}
+          {tab === "product"     && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Shop Product</h2><ProductForm  onSaved={() => setTick((t)=>t+1)} /></>}
+          {tab === "manage"      && <><h2 className="text-xl font-black text-gray-700 mb-6">Manage & Backup</h2><ManageData /></>}
+          {tab === "accessories" && <><h2 className="text-xl font-black text-gray-700 mb-6">Accessories & Price Catalog</h2><AccessoriesTab /></>}
+          {tab === "budget"      && <BudgetCalcTab />}
+          {tab === "monitoring"  && <><h2 className="text-xl font-black text-gray-700 mb-6">Monitoring Sites</h2><MonitoringSitesTab /></>}
         </div>
       </div>
     </div>

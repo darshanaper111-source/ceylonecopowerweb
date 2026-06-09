@@ -3,12 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 const NAV = [
-  ["/",         "Home"],
-  ["/projects", "Our Projects"],
-  ["/partners", "Our Partners"],
-  ["/shop",     "Shop"],
-  ["/quote",    "Get Quote"],
-  ["/contact",  "Contact Us"],
+  ["/",           "Home"],
+  ["/projects",   "Our Projects"],
+  ["/partners",   "Our Partners"],
+  ["/shop",       "Shop"],
+  ["/monitoring", "Monitoring"],
+  ["/quote",      "Get Quote"],
+  ["/contact",    "Contact Us"],
 ];
 
 export default function Header() {

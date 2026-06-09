@@ -48,7 +48,7 @@ export async function uploadPhotos(basePath, photos) {
       if (!item) return Promise.resolve(null);
       if (typeof item === "string") return Promise.resolve(item || null);
       if (item instanceof File)
-        return uploadPhoto(`${basePath}/photo${i + 1}.jpg`, item).catch(() => null);
+        return uploadPhoto(`${basePath}/photo${i + 1}.jpeg`, item).catch(() => null);
       return Promise.resolve(null);
     })
   );

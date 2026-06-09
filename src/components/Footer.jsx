@@ -2,12 +2,13 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 const NAV = [
-  ["/",         "Home"],
-  ["/projects", "Our Projects"],
-  ["/partners", "Our Partners"],
-  ["/shop",     "Shop"],
-  ["/quote",    "Get Quote"],
-  ["/contact",  "Contact Us"],
+  ["/",           "Home"],
+  ["/projects",   "Our Projects"],
+  ["/partners",   "Our Partners"],
+  ["/shop",       "Shop"],
+  ["/monitoring", "Monitoring"],
+  ["/quote",      "Get Quote"],
+  ["/contact",    "Contact Us"],
 ];
 
 export default function Footer() {
