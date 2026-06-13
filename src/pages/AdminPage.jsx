@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, CheckCircle, Download, LogOut,
-  Minus, Plus, Trash2, Upload, X, Loader,
+  Minus, PencilLine, Plus, Trash2, Upload, X, Loader,
 } from "lucide-react";
 import { isConfigured } from "../firebase/config.js";
 import { fbProjects, fbBrands, fbProducts } from "../firebase/db.js";
@@ -16,6 +16,7 @@ import { partnerSections }    from "../data/partners.js";
 import AccessoriesTab          from "../admin/AccessoriesTab.jsx";
 import BudgetCalcTab           from "../admin/BudgetCalcTab.jsx";
 import MonitoringSitesTab      from "../admin/MonitoringSitesTab.jsx";
+import QuotationTab            from "../admin/QuotationTab.jsx";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function cls(...p) { return p.filter(Boolean).join(" "); }
@@ -122,11 +123,19 @@ function FBBanner() {
   );
 }
 
-// ─── Add Project Form ─────────────────────────────────────────────────────────
-const BLANK_P = { categoryId:"utility", title:"", location:"", acCapacity:"", dcCapacity:"", client:"", details:"", photos:["","","","",""] };
+// ─── Add / Edit Project Form ──────────────────────────────────────────────────
+const BLANK_P = { categoryId:"utility", title:"", location:"", acCapacity:"", dcCapacity:"", client:"", details:"" };
 
-function ProjectForm({ onSaved }) {
-  const [form, setForm] = useState({ ...BLANK_P, photos: ["","","","",""] });
+function ProjectForm({ editing, onSaved, onCancel }) {
+  const padPhotos = (arr) => [...(arr || []), "", "", "", "", ""].slice(0, 5);
+  const [form, setForm] = useState(
+    editing
+      ? { categoryId:editing.categoryId||"utility", title:editing.title||"", location:editing.location||"",
+          acCapacity:editing.acCapacity||"", dcCapacity:editing.dcCapacity||"",
+          client:editing.client||"", details:editing.details||"",
+          photos: padPhotos(editing.photos) }
+      : { ...BLANK_P, photos: ["","","","",""] }
+  );
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [err,    setErr]    = useState("");
@@ -139,17 +148,21 @@ function ProjectForm({ onSaved }) {
     if (!form.title.trim() || !form.location.trim()) { setErr("Title and Location are required."); return; }
     setSaving(true); setErr("");
     try {
-      const data = { categoryId:form.categoryId, title:form.title, location:form.location, acCapacity:form.acCapacity, dcCapacity:form.dcCapacity, client:form.client, details:form.details };
-
+      const data = { categoryId:form.categoryId, title:form.title, location:form.location,
+                     acCapacity:form.acCapacity, dcCapacity:form.dcCapacity,
+                     client:form.client, details:form.details };
       if (isConfigured) {
-        const docRef = await fbProjects.add({ ...data, photos: [] });
-        const urls   = await uploadPhotos(`projects/${docRef.id}`, form.photos);
-        await fbProjects.update(docRef.id, { photos: urls });
+        if (editing) {
+          const urls = await uploadPhotos(`projects/${editing._fbId}`, form.photos);
+          await fbProjects.update(editing._fbId, { ...data, photos: urls });
+        } else {
+          const docRef = await fbProjects.add({ ...data, photos: [] });
+          const urls   = await uploadPhotos(`projects/${docRef.id}`, form.photos);
+          await fbProjects.update(docRef.id, { photos: urls });
+        }
       } else {
         addProject({ ...data, photos: form.photos.filter((p) => p && typeof p === "string") });
       }
-
-      setForm({ ...BLANK_P, photos: ["","","","",""] });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
       onSaved();
     } catch (e) { setErr(e.message); }
@@ -158,6 +171,12 @@ function ProjectForm({ onSaved }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {editing && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <p className="text-blue-800 text-sm font-semibold">Editing: <span className="font-black">{editing.title}</span></p>
+          <button type="button" onClick={onCancel} className="text-xs text-blue-600 hover:text-red-600 border border-blue-200 rounded-lg px-3 py-1.5">Cancel edit</button>
+        </div>
+      )}
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Category" required>
           <select value={form.categoryId} onChange={(e) => set("categoryId", e.target.value)} className={inp}>
@@ -171,7 +190,7 @@ function ProjectForm({ onSaved }) {
         <Field label="DC Capacity"><input value={form.dcCapacity} onChange={(e) => set("dcCapacity", e.target.value)} className={inp} placeholder="570 kWp" /></Field>
       </div>
       <Field label="Project Details"><textarea value={form.details} onChange={(e) => set("details", e.target.value)} rows={3} className={cls(inp,"resize-none")} placeholder="Description..." /></Field>
-      <Field label="Photos (up to 5)" hint={isConfigured ? "Files uploaded to Firebase Storage." : "Paste image URLs (Firebase not connected)."}>
+      <Field label="Photos (up to 5)" hint={isConfigured ? "Existing photos shown. Upload new files to replace individual slots." : "Paste image URLs."}>
         <div className="grid grid-cols-5 gap-2 mt-1">
           {form.photos.map((p,i) => <PhotoSlot key={i} n={i+1} value={p} onChange={(v) => setP(i,v)} />)}
         </div>
@@ -179,19 +198,28 @@ function ProjectForm({ onSaved }) {
       {err && <p className="text-red-600 text-sm">{err}</p>}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={saving} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold px-6 py-2.5 rounded-lg transition">
-          {saving ? <><Loader size={15} className="animate-spin" /> Saving…</> : <><Plus size={15} /> Save Project</>}
+          {saving ? <><Loader size={15} className="animate-spin" /> Saving…</> : editing ? <><CheckCircle size={15} /> Update Project</> : <><Plus size={15} /> Save Project</>}
         </button>
-        {saved && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle size={15} /> Saved!</span>}
+        {editing && <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Cancel</button>}
+        {saved && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle size={15} /> {editing ? "Updated!" : "Saved!"}</span>}
       </div>
     </form>
   );
 }
 
-// ─── Add Brand / Partner Form ─────────────────────────────────────────────────
-const BLANK_B = { sectionId:"solar-panels", name:"", logo:"", modelsText:"", photos:["","","","",""] };
+// ─── Add / Edit Brand / Partner Form ─────────────────────────────────────────
+const BLANK_B = { sectionId:"solar-panels", name:"", logo:"", modelsText:"" };
 
-function BrandForm({ onSaved }) {
-  const [form, setForm] = useState({ ...BLANK_B, photos: ["","","","",""] });
+function BrandForm({ editing, onSaved, onCancel }) {
+  const padPhotos = (arr) => [...(arr || []), "", "", "", "", ""].slice(0, 5);
+  const [form, setForm] = useState(
+    editing
+      ? { sectionId:editing.sectionId||"solar-panels", name:editing.name||"",
+          logo: editing.logo||"",
+          modelsText: (editing.models||[]).join("\n"),
+          photos: padPhotos(editing.photos) }
+      : { ...BLANK_B, photos: ["","","","",""] }
+  );
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [err,    setErr]    = useState("");
@@ -215,16 +243,23 @@ function BrandForm({ onSaved }) {
       const data   = { sectionId: form.sectionId, name: form.name, models };
 
       if (isConfigured) {
-        const docRef  = await fbBrands.add({ ...data, logo: "", photos: [] });
-        const logoUrl = form.logo instanceof File ? (await uploadPhotos(`brands/${docRef.id}`, [form.logo]))[0] || "" : (form.logo || "");
-        const urls    = await uploadPhotos(`brands/${docRef.id}`, form.photos);
-        await fbBrands.update(docRef.id, { logo: logoUrl, photos: urls });
+        if (editing) {
+          const logoUrl = form.logo instanceof File
+            ? (await uploadPhotos(`brands/${editing._fbId}`, [form.logo]))[0] || ""
+            : (form.logo || "");
+          const urls = await uploadPhotos(`brands/${editing._fbId}`, form.photos);
+          await fbBrands.update(editing._fbId, { ...data, logo: logoUrl, photos: urls });
+        } else {
+          const docRef  = await fbBrands.add({ ...data, logo: "", photos: [] });
+          const logoUrl = form.logo instanceof File ? (await uploadPhotos(`brands/${docRef.id}`, [form.logo]))[0] || "" : (form.logo || "");
+          const urls    = await uploadPhotos(`brands/${docRef.id}`, form.photos);
+          await fbBrands.update(docRef.id, { logo: logoUrl, photos: urls });
+        }
       } else {
         const logoVal = form.logo instanceof File ? "" : (form.logo || "");
         addBrand({ ...data, logo: logoVal, photos: form.photos.filter((p) => p && typeof p === "string") });
       }
 
-      setForm({ ...BLANK_B, photos: ["","","","",""] });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
       onSaved();
     } catch (e) { setErr(e.message); }
@@ -235,6 +270,12 @@ function BrandForm({ onSaved }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {editing && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <p className="text-blue-800 text-sm font-semibold">Editing: <span className="font-black">{editing.name}</span></p>
+          <button type="button" onClick={onCancel} className="text-xs text-blue-600 hover:text-red-600 border border-blue-200 rounded-lg px-3 py-1.5">Cancel edit</button>
+        </div>
+      )}
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Partner Section" required>
           <select value={form.sectionId} onChange={(e) => set("sectionId", e.target.value)} className={inp}>
@@ -244,7 +285,7 @@ function BrandForm({ onSaved }) {
         <Field label="Brand Name" required><input value={form.name} onChange={(e) => set("name", e.target.value)} className={inp} placeholder="e.g. Jinko Solar" /></Field>
       </div>
 
-      <Field label="Brand Logo" hint="Upload logo image.">
+      <Field label="Brand Logo" hint={editing ? "Current logo shown. Upload a new file to replace it." : "Upload logo image."}>
         <div className="flex gap-3 items-start mt-1">
           {logoPreview && (
             <div className="relative h-16 w-24 border rounded-lg overflow-hidden bg-gray-50 shrink-0">
@@ -266,7 +307,7 @@ function BrandForm({ onSaved }) {
         <textarea value={form.modelsText} onChange={(e) => set("modelsText", e.target.value)} rows={4} className={cls(inp,"resize-none mt-1")} placeholder={"Tiger Neo N-Type 580W\nEagle G4 Series"} />
       </Field>
 
-      <Field label="Product / Installation Photos (up to 5)" hint={isConfigured ? "Uploaded to Firebase Storage." : "Paste URLs (Firebase not connected)."}>
+      <Field label="Product / Installation Photos (up to 5)" hint={editing ? "Existing photos shown. Upload new files to replace individual slots." : isConfigured ? "Uploaded to Firebase Storage." : "Paste URLs."}>
         <div className="grid grid-cols-5 gap-2 mt-1">
           {form.photos.map((p,i) => <PhotoSlot key={i} n={i+1} value={p} onChange={(v) => setP(i,v)} />)}
         </div>
@@ -275,15 +316,16 @@ function BrandForm({ onSaved }) {
       {err && <p className="text-red-600 text-sm">{err}</p>}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={saving} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold px-6 py-2.5 rounded-lg transition">
-          {saving ? <><Loader size={15} className="animate-spin" /> Saving…</> : <><Plus size={15} /> Save Brand</>}
+          {saving ? <><Loader size={15} className="animate-spin" /> Saving…</> : editing ? <><CheckCircle size={15} /> Update Brand</> : <><Plus size={15} /> Save Brand</>}
         </button>
-        {saved && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle size={15} /> Saved!</span>}
+        {editing && <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Cancel</button>}
+        {saved && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle size={15} /> {editing ? "Updated!" : "Saved!"}</span>}
       </div>
     </form>
   );
 }
 
-// ─── Add Shop Product Form ────────────────────────────────────────────────────
+// ─── Add / Edit Shop Product Form ────────────────────────────────────────────
 const PRODUCT_CATS = [
   { id:"panels",           label:"Solar Panels" },
   { id:"string-inverters", label:"String Inverters" },
@@ -294,10 +336,20 @@ const PRODUCT_CATS = [
 ];
 const PRICE_UNITS = ["per panel","per unit","per kWh","per metre","per roll","per set"];
 
-const BLANK_PROD = { category:"panels", brand:"", model:"", price:"", priceUnit:"per unit", description:"", specs:[], inStock:true, featured:false, photos:["","","","",""] };
+const BLANK_PROD = { category:"panels", brand:"", model:"", price:"", priceUnit:"per unit", description:"", specs:[], inStock:true, featured:false };
 
-function ProductForm({ onSaved }) {
-  const [form, setForm] = useState({ ...BLANK_PROD, specs:[], photos:["","","","",""] });
+function ProductForm({ editing, onSaved, onCancel }) {
+  const padPhotos = (arr) => [...(arr || []), "", "", "", "", ""].slice(0, 5);
+  const [form, setForm] = useState(
+    editing
+      ? { category:editing.category||"panels", brand:editing.brand||"", model:editing.model||"",
+          price: editing.price != null ? String(editing.price) : "",
+          priceUnit:editing.priceUnit||"per unit", description:editing.description||"",
+          specs: editing.specs || [],
+          inStock: editing.inStock ?? true, featured: editing.featured ?? false,
+          photos: padPhotos(editing.photos) }
+      : { ...BLANK_PROD, specs:[], photos:["","","","",""] }
+  );
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [err,    setErr]    = useState("");
@@ -308,7 +360,7 @@ function ProductForm({ onSaved }) {
   async function submit(e) {
     e.preventDefault();
     if (!form.brand.trim() || !form.model.trim()) { setErr("Brand and Model are required."); return; }
-    if (!isConfigured) { setErr("Firebase must be configured to add shop products."); return; }
+    if (!isConfigured) { setErr("Firebase must be configured to save shop products."); return; }
     setSaving(true); setErr("");
     try {
       const data = {
@@ -318,11 +370,15 @@ function ProductForm({ onSaved }) {
         specs: form.specs.filter((s) => s.key && s.value),
         inStock: form.inStock, featured: form.featured,
       };
-      const docRef = await fbProducts.add({ ...data, photos: [] });
-      const urls   = await uploadPhotos(`products/${docRef.id}`, form.photos);
-      await fbProducts.update(docRef.id, { photos: urls });
+      if (editing) {
+        const urls = await uploadPhotos(`products/${editing._fbId}`, form.photos);
+        await fbProducts.update(editing._fbId, { ...data, photos: urls });
+      } else {
+        const docRef = await fbProducts.add({ ...data, photos: [] });
+        const urls   = await uploadPhotos(`products/${docRef.id}`, form.photos);
+        await fbProducts.update(docRef.id, { photos: urls });
+      }
 
-      setForm({ ...BLANK_PROD, specs:[], photos:["","","","",""] });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
       onSaved();
     } catch (e) { setErr(e.message); }
@@ -331,6 +387,12 @@ function ProductForm({ onSaved }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {editing && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <p className="text-blue-800 text-sm font-semibold">Editing: <span className="font-black">{editing.brand} — {editing.model}</span></p>
+          <button type="button" onClick={onCancel} className="text-xs text-blue-600 hover:text-red-600 border border-blue-200 rounded-lg px-3 py-1.5">Cancel edit</button>
+        </div>
+      )}
       {!isConfigured && (
         <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
           <AlertTriangle size={15} className="shrink-0 mt-0.5" /> Shop products require Firebase. Add credentials to .env first.
@@ -376,7 +438,7 @@ function ProductForm({ onSaved }) {
         </label>
       </div>
 
-      <Field label="Product Photos (up to 5)" hint="Uploaded to Firebase Storage.">
+      <Field label="Product Photos (up to 5)" hint={editing ? "Existing photos shown. Upload new files to replace individual slots." : "Uploaded to Firebase Storage."}>
         <div className="grid grid-cols-5 gap-2 mt-1">
           {form.photos.map((p,i) => <PhotoSlot key={i} n={i+1} value={p} onChange={(v) => setP(i,v)} />)}
         </div>
@@ -385,16 +447,17 @@ function ProductForm({ onSaved }) {
       {err && <p className="text-red-600 text-sm">{err}</p>}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={saving || !isConfigured} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold px-6 py-2.5 rounded-lg transition">
-          {saving ? <><Loader size={15} className="animate-spin" /> Saving…</> : <><Plus size={15} /> Save Product</>}
+          {saving ? <><Loader size={15} className="animate-spin" /> Saving…</> : editing ? <><CheckCircle size={15} /> Update Product</> : <><Plus size={15} /> Save Product</>}
         </button>
-        {saved && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle size={15} /> Saved!</span>}
+        {editing && <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Cancel</button>}
+        {saved && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle size={15} /> {editing ? "Updated!" : "Saved!"}</span>}
       </div>
     </form>
   );
 }
 
 // ─── Manage & Backup ──────────────────────────────────────────────────────────
-function ManageData() {
+function ManageData({ onEditProject, onEditBrand, onEditProduct }) {
   const [, refresh] = useState(0);
   const [fbProjList, setFbProjList] = useState([]);
   const [fbBrandList, setFbBrandList] = useState([]);
@@ -490,7 +553,10 @@ function ManageData() {
                     {p.photos?.[0] && <img src={p.photos[0]} alt="" className="h-10 w-14 rounded-lg object-cover shrink-0" />}
                     <div><p className="font-semibold text-sm">{p.title}</p><p className="text-xs text-gray-400">{p.location} · {p.photos?.length||0} photos</p></div>
                   </div>
-                  <button onClick={async () => { await fbProjects.remove(p._fbId); setFbProjList((l) => l.filter((x) => x._fbId !== p._fbId)); }} className="text-red-400 hover:text-red-600 p-1 ml-3"><Trash2 size={16} /></button>
+                  <div className="flex items-center gap-1 ml-3">
+                    <button onClick={() => onEditProject && onEditProject(p)} title="Edit" className="text-blue-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"><PencilLine size={16} /></button>
+                    <button onClick={async () => { await fbProjects.remove(p._fbId); setFbProjList((l) => l.filter((x) => x._fbId !== p._fbId)); }} title="Delete" className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"><Trash2 size={16} /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -510,7 +576,10 @@ function ManageData() {
                     {b.logo && <img src={b.logo} alt="" className="h-10 w-14 object-contain rounded shrink-0" />}
                     <div><p className="font-semibold text-sm">{b.name}</p><p className="text-xs text-gray-400">{b.sectionId} · {b.photos?.length||0} photos</p></div>
                   </div>
-                  <button onClick={async () => { await fbBrands.remove(b._fbId); setFbBrandList((l) => l.filter((x) => x._fbId !== b._fbId)); }} className="text-red-400 hover:text-red-600 p-1 ml-3"><Trash2 size={16} /></button>
+                  <div className="flex items-center gap-1 ml-3">
+                    <button onClick={() => onEditBrand && onEditBrand(b)} title="Edit" className="text-blue-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"><PencilLine size={16} /></button>
+                    <button onClick={async () => { await fbBrands.remove(b._fbId); setFbBrandList((l) => l.filter((x) => x._fbId !== b._fbId)); }} title="Delete" className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"><Trash2 size={16} /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -533,7 +602,10 @@ function ManageData() {
                       <p className="text-xs text-gray-400">{p.category} · {p.price ? `LKR ${Number(p.price).toLocaleString()}` : "Price on request"}</p>
                     </div>
                   </div>
-                  <button onClick={async () => { await fbProducts.remove(p._fbId); setFbProdList((l) => l.filter((x) => x._fbId !== p._fbId)); }} className="text-red-400 hover:text-red-600 p-1 ml-3"><Trash2 size={16} /></button>
+                  <div className="flex items-center gap-1 ml-3">
+                    <button onClick={() => onEditProduct && onEditProduct(p)} title="Edit" className="text-blue-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"><PencilLine size={16} /></button>
+                    <button onClick={async () => { await fbProducts.remove(p._fbId); setFbProdList((l) => l.filter((x) => x._fbId !== p._fbId)); }} title="Delete" className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"><Trash2 size={16} /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -568,14 +640,26 @@ const TABS = [
   ["accessories","Accessories & Prices"],
   ["budget",     "Budget Calculator"],
   ["monitoring", "Monitoring Sites"],
+  ["quotation",  "Quotations"],
 ];
 
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(isLoggedIn());
-  const [tab, setTab]       = useState("project");
-  const [, setTick]         = useState(0);
+  const [authed, setAuthed]               = useState(isLoggedIn());
+  const [tab, setTab]                     = useState("project");
+  const [, setTick]                       = useState(0);
+  const [pendingBudget, setPendingBudget] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
+  const [editingBrand,   setEditingBrand]   = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   if (!authed) return <LoginForm onLogin={() => setAuthed(true)} />;
+
+  const tabLabel = (id) => {
+    if (id === "project") return editingProject ? "Edit Project"  : "Add Project";
+    if (id === "brand")   return editingBrand   ? "Edit Partner"  : "Add Partner";
+    if (id === "product") return editingProduct ? "Edit Product"  : "Add Shop Product";
+    return TABS.find(([tid]) => tid === id)?.[1] ?? id;
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
@@ -595,21 +679,73 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white rounded-xl p-1 border shadow-sm mb-8 flex-wrap">
-          {TABS.map(([id, label]) => (
+          {TABS.map(([id]) => (
             <button key={id} onClick={() => setTab(id)} className={cls("px-5 py-2.5 rounded-lg text-sm font-semibold transition", tab===id ? "bg-yellow-500 text-white shadow" : "text-gray-500 hover:text-gray-800")}>
-              {label}
+              {tabLabel(id)}
             </button>
           ))}
         </div>
 
         <div className={tab === "budget" ? "" : "bg-white rounded-2xl border shadow-sm p-8"}>
-          {tab === "project"     && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Completed Project</h2><ProjectForm onSaved={() => setTick((t)=>t+1)} /></>}
-          {tab === "brand"       && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Partner / Brand</h2><BrandForm   onSaved={() => setTick((t)=>t+1)} /></>}
-          {tab === "product"     && <><h2 className="text-xl font-black text-gray-700 mb-6">Add Shop Product</h2><ProductForm  onSaved={() => setTick((t)=>t+1)} /></>}
-          {tab === "manage"      && <><h2 className="text-xl font-black text-gray-700 mb-6">Manage & Backup</h2><ManageData /></>}
+          {tab === "project" && (
+            <>
+              <h2 className="text-xl font-black text-gray-700 mb-6">{editingProject ? "Edit Project" : "Add Completed Project"}</h2>
+              <ProjectForm
+                key={editingProject?._fbId ?? "new-project"}
+                editing={editingProject}
+                onSaved={() => { setTick((t)=>t+1); setEditingProject(null); }}
+                onCancel={() => setEditingProject(null)}
+              />
+            </>
+          )}
+          {tab === "brand" && (
+            <>
+              <h2 className="text-xl font-black text-gray-700 mb-6">{editingBrand ? "Edit Partner / Brand" : "Add Partner / Brand"}</h2>
+              <BrandForm
+                key={editingBrand?._fbId ?? "new-brand"}
+                editing={editingBrand}
+                onSaved={() => { setTick((t)=>t+1); setEditingBrand(null); }}
+                onCancel={() => setEditingBrand(null)}
+              />
+            </>
+          )}
+          {tab === "product" && (
+            <>
+              <h2 className="text-xl font-black text-gray-700 mb-6">{editingProduct ? "Edit Shop Product" : "Add Shop Product"}</h2>
+              <ProductForm
+                key={editingProduct?._fbId ?? "new-product"}
+                editing={editingProduct}
+                onSaved={() => { setTick((t)=>t+1); setEditingProduct(null); }}
+                onCancel={() => setEditingProduct(null)}
+              />
+            </>
+          )}
+          {tab === "manage"      && (
+            <>
+              <h2 className="text-xl font-black text-gray-700 mb-6">Manage & Backup</h2>
+              <ManageData
+                onEditProject={(p) => { setEditingProject(p); setTab("project"); }}
+                onEditBrand={(b)   => { setEditingBrand(b);   setTab("brand"); }}
+                onEditProduct={(p) => { setEditingProduct(p); setTab("product"); }}
+              />
+            </>
+          )}
           {tab === "accessories" && <><h2 className="text-xl font-black text-gray-700 mb-6">Accessories & Price Catalog</h2><AccessoriesTab /></>}
-          {tab === "budget"      && <BudgetCalcTab />}
+          {tab === "budget"      && (
+            <BudgetCalcTab
+              onGenerateQuotation={(data) => { setPendingBudget(data); setTab("quotation"); }}
+            />
+          )}
           {tab === "monitoring"  && <><h2 className="text-xl font-black text-gray-700 mb-6">Monitoring Sites</h2><MonitoringSitesTab /></>}
+          {tab === "quotation"   && (
+            <>
+              <h2 className="text-xl font-black text-gray-700 mb-6">Customer Quotations</h2>
+              <QuotationTab
+                budgetImport={pendingBudget}
+                onBudgetImportDone={() => setPendingBudget(null)}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

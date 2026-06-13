@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Plus, Trash2, RefreshCw, Printer, ChevronDown, ChevronUp, Sun, Zap, BatteryCharging, TrendingUp } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Printer, FileText, ChevronDown, ChevronUp, Sun, Zap, BatteryCharging, TrendingUp } from "lucide-react";
 import { getAccessories } from "../data/accessories.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ function Section({ title, icon, open, onToggle, children }) {
 }
 
 // ─── BudgetCalcTab ─────────────────────────────────────────────────────────────
-export default function BudgetCalcTab() {
+export default function BudgetCalcTab({ onGenerateQuotation }) {
   // ── Project info
   const [info, setInfo] = useState({
     name:"", client:"", type:"dom-ongrid",
@@ -442,12 +442,72 @@ export default function BudgetCalcTab() {
         </div>
       </Section>
 
-      {/* ── Print / Export ── */}
-      <div className="flex justify-end">
+      {/* ── Print / Export / Generate Quotation ── */}
+      <div className="flex flex-wrap gap-3 justify-end">
         <button onClick={printSummary}
           className="flex items-center gap-2 bg-gray-800 hover:bg-black text-white font-bold px-6 py-3 rounded-xl transition text-sm">
-          <Printer size={15}/> Print / Save as PDF
+          <Printer size={15}/> Print Budget
         </button>
+        {onGenerateQuotation && (
+          <button
+            onClick={() => {
+              const isBESS = info.type.endsWith("bess");
+              const panelItem   = items.find((r) => r.cat === "panels");
+              const inverterItem = items.find((r) => r.cat === "inverter");
+              const batteryItem  = items.find((r) => r.cat === "battery");
+              const otherItems   = items.filter((r) => !["panels","inverter","battery"].includes(r.cat));
+              const numPanels    = panelItem?.qty ?? Math.ceil((Number(info.dcKwp) * 1000) / Number(info.panelW));
+
+              const equipmentRows = [
+                {
+                  id: "eq1", cat: "panels", label: "Solar Panels",
+                  brand: "", spec: `${info.panelW} Wp`,
+                  qty: numPanels, unit: "units",
+                },
+                {
+                  id: "eq2", cat: "inverter", label: "Inverter",
+                  brand: "", spec: `${info.acKw} kW`,
+                  qty: 1, unit: "unit",
+                },
+                ...(isBESS ? [{
+                  id: "eq3", cat: "battery", label: "Battery System",
+                  brand: "", spec: `${info.batKwh} kWh`,
+                  qty: 1, unit: "unit",
+                }] : []),
+                ...(otherItems.length > 0
+                  ? otherItems.map((r, i) => ({
+                      id: `acc${i + 1}`, cat: r.cat, label: r.description,
+                      brand: "", spec: "", qty: r.qty, unit: r.unit,
+                    }))
+                  : [
+                      { id:"acc1", cat:"bos",       label:"Balance of System (BOS)", brand:"", spec:"DC/AC cables, MC4, mounting structure, earthing, SPD, breakers, energy meter, WiFi logger", qty:1, unit:"set"  },
+                      { id:"acc2", cat:"labor",     label:"Installation & Labor",    brand:"", spec:"", qty:1, unit:"lump" },
+                      { id:"acc3", cat:"logistics", label:"Logistics & Transport",   brand:"", spec:"", qty:1, unit:"trip" },
+                    ]
+                ),
+              ];
+
+              onGenerateQuotation({
+                projectType: info.type,
+                projectName: info.name,
+                client: info.client,
+                acKw: Number(info.acKw),
+                dcKwp: Number(info.dcKwp),
+                batKwh: Number(info.batKwh),
+                panelW: Number(info.panelW),
+                equipmentRows,
+                totalPrice: grandTotal,
+                discountPct,
+                budgetSnapshot: {
+                  info: { ...info }, items: [...items],
+                  profitPct, discountPct, vatPct, grandTotal,
+                },
+              });
+            }}
+            className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-6 py-3 rounded-xl transition text-sm">
+            <FileText size={15}/> Generate Quotation
+          </button>
+        )}
       </div>
     </div>
   );

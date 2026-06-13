@@ -60,3 +60,11 @@ export const fbMonitorSites = {
   update: (id, d) => update("monitoringSites", id, d),
   remove: (id) => remove("monitoringSites", id),
 };
+
+// ─── Quotations ───────────────────────────────────────────────────────────────
+export const fbQuotations = {
+  getAll: () => getAll("quotations"),
+  add:    (d) => add("quotations", d),
+  update: (id, d) => update("quotations", id, d),
+  remove: (id) => remove("quotations", id),
+};
